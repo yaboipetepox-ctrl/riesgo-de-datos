@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simulador Pipeline: Riesgos y Soluciones</title>
+    <style>
+        :root {
+            --bg: #f4f7f6;
+            --card: #ffffff;
+            --text: #2c3e50;
+            --primary: #3498db;
+            --danger: #e74c3c;
+            --success: #2ecc71;
+            --warning: #f1c40f;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        h1 {
+            margin-bottom: 5px;
+            text-align: center;
+        }
+
+        .container {
+            background: var(--card);
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            max-width: 1000px;
+            width: 100%;
+        }
+
+        /* Menú de Escenarios */
+        .scenario-selector {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .scenario-btn {
+            padding: 10px 15px;
+            background: #ecf0f1;
+            border: 2px solid #bdc3c7;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.2s;
+        }
+
+        .scenario-btn:hover {
+            background: #d0d3d4;
+        }
+
+        .scenario-btn.active {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+
+        /* Panel de Explicación */
+        .info-panel {
+            background: #f8f9fa;
+            border-left: 5px solid var(--primary);
+            padding: 15px;
+            margin-bottom: 20px;
+            min-height: 80px;
+        }
+
+        .info-panel h3 {
+            margin-top: 0;
+            color: var(--primary);
+        }
+
+        .info-panel .highlight {
+            color: var(--danger);
+            font-weight: bold;
+        }
+
+        .info-panel .success {
+            color: var(--success);
+            font-weight: bold;
+        }
+
+        /* Controles */
+        .controls {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+
+        button.ctrl-btn {
+            padding: 10px 20px;
+            background: var(--text);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 1em;
+        }
+
+        button.ctrl-btn:hover {
+            opacity: 0.9;
+        }
+
+        button.ctrl-btn:disabled {
+            background: #bdc3c7;
+            cursor: not-allowed;
+        }
+
+        /* Tabla de Pipeline */
+        .pipeline-table {
+            width: 100%;
+            border-collapse: collapse;
+            table-layout: fixed;
+        }
+
+        .pipeline-table th,
+        .pipeline-table td {
+            border: 1px solid #ddd;
+            text-align: center;
+            height: 50px;
+            position: relative;
+        }
+
+        .pipeline-table th {
+            background-color: #34495e;
+            color: white;
+        }
+
+        .pipeline-table td.instr-name {
+            background-color: #ecf0f1;
+            font-weight: bold;
+            text-align: right;
+            padding-right: 10px;
+            font-family: 'Courier New', monospace;
+            width: 130px;
+        }
+
+        /* Estilos de Etapas */
+        .stage {
+            display: block;
+            width: 90%;
+            height: 85%;
+            line-height: 42px;
+            border-radius: 4px;
+            color: white;
+            font-weight: bold;
+            font-size: 0.85em;
+            margin: auto;
+            box-shadow: 0 2px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        .s-if {
+            background-color: #3498db;
+        }
+
+        .s-id {
+            background-color: #9b59b6;
+        }
+
+        .s-ex {
+            background-color: #e74c3c;
+        }
+
+        .s-mem {
+            background-color: #f1c40f;
+            color: #7f8c8d;
+        }
+
+        .s-wb {
+            background-color: #2ecc71;
+        }
+
+        /* Estilos Especiales */
+        .s-stall {
+            background-color: #ecf0f1;
+            color: #e74c3c;
+            border: 2px dashed #e74c3c;
+            font-weight: bold;
+            animation: pulse 1s infinite;
+        }
+
+        @keyframes pulse {
+            0% {
+                opacity: 0.6;
+            }
+
+            50% {
+                opacity: 1;
+            }
+
+            100% {
+                opacity: 0.6;
+            }
+        }
+
+        .current-col {
+            background-color: rgba(52, 152, 219, 0.1);
+        }
+
+        /* Visualización de Forwarding (Flecha simulada con borde) */
+        .forwarding-indicator {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border: 3px solid var(--success);
+            box-sizing: border-box;
+            pointer-events: none;
+        }
+
+        .forwarding-label {
+            position: absolute;
+            top: -10px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--success);
+            color: white;
+            font-size: 0.7em;
+            padding: 1px 4px;
+            border-radius: 3px;
+            z-index: 10;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container">
+        <h1>Simulador Interactivo: Segmentación y Riesgos</h1>
+
+        <div class="scenario-selector">
+            <button class="scenario-btn active" onclick="loadScenario('basic')">1. Básico (Sin Riesgos)</button>
+            <button class="scenario-btn" onclick="loadScenario('raw_stall')">2. Riesgo Datos (Burbujas)</button>
+            <button class="scenario-btn" onclick="loadScenario('raw_forward')">3. Solución (Forwarding)</button>
+            <button class="scenario-btn" onclick="loadScenario('control')">4. Riesgo Control</button>
+        </div>
+
+        <div class="info-panel">
+            <h3 id="panel-title">Instrucciones</h3>
+            <div id="panel-desc">Selecciona un escenario para ver la explicación detallada.</div>
+        </div>
+
+        <div class="controls">
+            <button class="ctrl-btn" onclick="stepBack()">◀ Anterior</button>
+            <button class="ctrl-btn" onclick="stepForward()">Siguiente ▶</button>
+            <button class="ctrl-btn" onclick="resetSim()" style="background: #7f8c8d;">Reiniciar</button>
+        </div>
+
+        <table class="pipeline-table">
+            <thead>
+                <tr id="header-row">
+                    <th>Instrucción</th>
+                </tr>
+            </thead>
+            <tbody id="table-body">
+                <!-- Filas generadas por JS -->
+            </tbody>
+        </table>
+    </div>
+
+    <script>
+        // --- Configuración Inicial ---
+        const CYCLES = 8; // Mostrar 8 columnas de tiempo
+        const STAGES = ['IF', 'ID', 'EX', 'MEM', 'WB'];
+        const STYLES = ['s-if', 's-id', 's-ex', 's-mem', 's-wb'];
+
+        let currentCycle = 0;
+        let currentScenarioKey = 'basic';
+
+        // --- Definición de Escenarios ---
+        // La función getStage(instrIndex, cycle) devuelve la etapa o 'stall'
+        const scenarios = {
+            'basic': {
+                title: "Team Overclock: Flujo Básico",
+                desc: "Ejecución ideal sin dependencias. Observa cómo cada instrucción avanza una etapa por ciclo.",
+                instructions: [
+                    { name: "ADD R1, R2" },
+                    { name: "SUB R3, R4" },
+                    { name: "AND R5, R6" }
+                ],
+                logic: (idx, c) => {
+                    // Lógica diagonal simple: Instrucción i empieza en ciclo i
+                    const stageIdx = c - idx;
+                    if (stageIdx >= 0 && stageIdx < 5) return stageIdx; // Índice de etapa
+                    return null;
+                }
+            },
+            'raw_stall': {
+                title: "Byte to Byte: Riesgo de Datos (RAW)",
+                desc: "<span class='highlight'>PROBLEMA:</span> SUB necesita R1, pero ADD no lo escribe hasta WB (Ciclo 5). SUB lo necesita en ID (Ciclo 3).<br>SOLUCIÓN: El procesador inserta <span class='highlight'>Burbujas (Stalls)</span> en los ciclos 3 y 4. SUB espera.",
+                instructions: [
+                    { name: "ADD R1, R2, R3" }, // Escribe R1
+                    { name: "SUB R4, R1, R5" }  // Lee R1
+                ],
+                logic: (idx, c) => {
+                    if (idx === 0) { // ADD normal
+                        const stageIdx = c;
+                        return (stageIdx >= 0 && stageIdx < 5) ? stageIdx : null;
+                    }
+                    if (idx === 1) { // SUB con paradas
+                        // ADD escribe en ciclo 4 (WB). SUB necesita leer en ID.
+                        // Sin forwarding: SUB debe esperar hasta que ADD esté en MEM o WB.
+                        // Regla: Stall hasta que el riesgo desaparece.
+                        // Ciclo 1: IF
+                        // Ciclo 2: ID (debería detectar riesgo aquí)
+                        // Ciclo 3: Stall
+                        // Ciclo 4: Stall
+                        // Ciclo 5: ID (ahora lee dato correcto? O continúa?)
+                        // Análisis detallado del profesor:
+                        // ADD: IF(1), ID(2), EX(3), MEM(4), WB(5)
+                        // SUB: IF(2). En ciclo 3, ADD está en EX. El dato no está listo.
+                        // SUB se para en ID (decodificación) durante 2 ciclos.
+                        // Ciclo 3: Stall
+                        // Ciclo 4: Stall
+                        // Ciclo 5: ID (lee registro en segunda mitad, ADD escribió en primera mitad? o forwarding?)
+                        // Si solo usamos paradas: ADD escribe en ciclo 5 (WB). SUB lee en ciclo 5 (ID).
+
+                        if (c === 0) return 0; // IF en ciclo 1 (c=0 es ciclo 1? No, c es ciclo relativo a start)
+                        // SUB empieza en ciclo 1 (c=1 en tiempo real)
+                        // Vamos a usar tiempo real 'c' basado en el ciclo global actual
+
+                        // Flujo:
+                        // Ciclo 1: ADD IF
+                        // Ciclo 2: ADD ID, SUB IF
+                        // Ciclo 3: ADD EX, SUB ID -> DETECTA RIESGO. Se queda en ID (Stall)
+                        // Ciclo 4: ADD MEM, SUB Stall
+                        // Ciclo 5: ADD WB, SUB ID (Ahora pasa a EX)
+                        // Ciclo 6: SUB EX...
+
+                        // Simplificación para la grilla:
+                        // Fila 0 (ADD): 0, 1, 2, 3, 4 (Indices de etapa)
+                        // Fila 1 (SUB): 
+                        // Ciclo Global 1: -
+                        // Ciclo Global 2: IF (etapa 0)
+                        // Ciclo Global 3: ID (etapa 1) -> PERO SE QUEDA AQUI
+                        // Ciclo Global 4: ID (Stall visual) 
+                        // Ciclo Global 5: EX (etapa 2) -> AVANZA
+                        // Ciclo Global 6: MEM
+                        // Ciclo Global 7: WB
+
+                        // Mapeo simple para código:
+                        // SUB entra al pipeline 1 ciclo después de ADD.
+                        // IF: ciclo 1 (relativo a start de ADD? No, usemos ciclo absoluto)
+                        return null; // Placeholder, lo haré manual en la función de renderizado para precisión visual.
+                    }
+                }
+            },
+            'raw_forward': {
+                title: "Byte to Byte: Solución Forwarding",
+                desc: "<span class='success'>SOLUCIÓN:</span> Se adelanta el dato. El resultado de ADD se pasa directamente desde la salida de la ALU (EX) a la entrada de la ALU de SUB. <span class='success'>¡No hay burbujas!</span>",
+                instructions: [
+                    { name: "ADD R1, R2, R3" },
+                    { name: "SUB R4, R1, R5" }
+                ],
+                logic: (idx, c) => null // Lógica manual en render
+            },
+            'control': {
+                title: "Power Rangers: Riesgo de Control",
+                desc: "<span class='highlight'>PROBLEMA:</span> El salto BEQ se decide en EX. Ya cargamos 2 instrucciones que no deberían ejecutarse.<br>SOLUCIÓN: Se anulan (Flush) las instrucciones incorrectas.",
+                instructions: [
+                    { name: "BEQ R1, Loop" },
+                    { name: "AND R2, R3" },
+                    { name: "OR  R4, R5" }
+                ],
+                logic: (idx, c) => null // Lógica manual
+            }
+        };
+
+        // --- Motor de Simulación ---
+
+        function init() {
+            const header = document.getElementById('header-row');
+            header.innerHTML = '<th>Instrucción</th>';
+            for (let i = 1; i <= CYCLES; i++) header.innerHTML += `<th>Ciclo ${i}</th>`;
+            resetSim();
+        }
+
+        function loadScenario(key) {
+            currentScenarioKey = key;
+            resetSim();
+            // Actualizar panel de info
+            const data = scenarios[key];
+            document.getElementById('panel-title').innerText = data.title;
+            document.getElementById('panel-desc').innerHTML = data.desc;
+
+            // Resaltar botón
+            document.querySelectorAll('.scenario-btn').forEach(b => b.classList.remove('active'));
+            event.target.classList.add('active');
+        }
+
+        function resetSim() {
+            currentCycle = 0;
+            renderGrid();
+        }
+
+        function stepForward() {
+            if (currentCycle < CYCLES) {
+                currentCycle++;
+                renderGrid();
+            }
+        }
+
+        function stepBack() {
+            if (currentCycle > 0) {
+                currentCycle--;
+                renderGrid();
+            }
+        }
+
+        // --- Renderizado Inteligente ---
+
+        function renderGrid() {
+            const tbody = document.getElementById('table-body');
+            const data = scenarios[currentScenarioKey];
+            tbody.innerHTML = '';
+
+            // Generar filas por cada instrucción
+            data.instructions.forEach((inst, instIndex) => {
+                let row = document.createElement('tr');
+
+                // Celda nombre
+                let tdName = document.createElement('td');
+                tdName.className = 'instr-name';
+                tdName.innerText = inst.name;
+                row.appendChild(tdName);
+
+                // Generar celdas de tiempo (1 a CYCLES)
+                for (let c = 1; c <= CYCLES; c++) {
+                    let td = document.createElement('td');
+                    td.className = (c === currentCycle) ? 'current-col' : '';
+
+                    // Determinar qué dibujar en esta celda [instIndex][ciclo c]
+                    let content = calculateStage(currentScenarioKey, instIndex, c, currentCycle);
+
+                    if (content !== null) {
+                        let div = document.createElement('div');
+                        div.className = 'stage ' + content.css;
+                        div.innerText = content.text;
+
+                        // Añadir indicador de forwarding si aplica
+                        if (content.forward) {
+                            let label = document.createElement('div');
+                            label.className = 'forwarding-label';
+                            label.innerText = "Forward";
+                            div.appendChild(label);
+                            div.classList.add('forwarding-indicator');
+                        }
+
+                        td.appendChild(div);
+                    }
+
+                    row.appendChild(td);
+                }
+                tbody.appendChild(row);
+            });
+        }
+
+        // Lógica central que define qué mostrar en cada escenario
+        function calculateStage(scenarioKey, instIdx, cycle, currentMaxCycle) {
+            if (cycle > currentMaxCycle) return null;
+
+            // --- Escenario 1: Básico ---
+            if (scenarioKey === 'basic') {
+                const stageIdx = cycle - instIdx - 1; // Diagonal simple
+                if (stageIdx >= 0 && stageIdx < 5) {
+                    return { css: STYLES[stageIdx], text: STAGES[stageIdx] };
+                }
+            }
+
+            // --- Escenario 2: Riesgo con Stall ---
+            if (scenarioKey === 'raw_stall') {
+                // ADD (instIdx 0): Flujo normal 1,2,3,4,5
+                if (instIdx === 0) {
+                    const stageIdx = cycle - 1;
+                    if (stageIdx >= 0 && stageIdx < 5) return { css: STYLES[stageIdx], text: STAGES[stageIdx] };
+                }
+                // SUB (instIdx 1): Depende de ADD
+                if (instIdx === 1) {
+                    // Ciclo 1: Nada
+                    // Ciclo 2: IF
+                    // Ciclo 3: Stall (debería ser ID, pero se queda)
+                    // Ciclo 4: Stall
+                    // Ciclo 5: ID (o EX? Si esperamos a WB de ADD, es ID en ciclo 5)
+                    // ADD está en WB en ciclo 5. SUB puede leer en ID en ciclo 5.
+                    // Luego EX(6), MEM(7), WB(8)
+
+                    if (cycle === 2) return { css: 's-if', text: 'IF' };
+                    if (cycle === 3) return { css: 's-stall', text: 'STALL' }; // Se atascó en ID
+                    if (cycle === 4) return { css: 's-stall', text: 'STALL' }; // Sigue atascado
+                    if (cycle === 5) return { css: 's-id', text: 'ID' };       // Ahora lee
+                    if (cycle === 6) return { css: 's-ex', text: 'EX' };
+                    if (cycle === 7) return { css: 's-mem', text: 'MEM' };
+                    if (cycle === 8) return { css: 's-wb', text: 'WB' };
+                }
+            }
+
+            // --- Escenario 3: Forwarding ---
+            if (scenarioKey === 'raw_forward') {
+                // ADD (instIdx 0): Flujo normal
+                if (instIdx === 0) {
+                    const stageIdx = cycle - 1;
+                    if (stageIdx >= 0 && stageIdx < 5) return { css: STYLES[stageIdx], text: STAGES[stageIdx] };
+                }
+                // SUB (instIdx 1): Sin paradas
+                if (instIdx === 1) {
+                    // Entra 1 ciclo después
+                    // Ciclo 2: IF
+                    // Ciclo 3: ID
+                    // Ciclo 4: EX (Aquí ocurre el adelanto mágico)
+                    // Ciclo 5: MEM
+                    // Ciclo 6: WB
+
+                    if (cycle === 2) return { css: 's-if', text: 'IF' };
+                    if (cycle === 3) return { css: 's-id', text: 'ID' };
+                    if (cycle === 4) {
+                        // Visualizamos el adelanto: ADD está en MEM, SUB en EX
+                        // El dato viene de ADD.
+                        return { css: 's-ex', text: 'EX', forward: true };
+                    }
+                    if (cycle === 5) return { css: 's-mem', text: 'MEM' };
+                    if (cycle === 6) return { css: 's-wb', text: 'WB' };
+                }
+            }
+
+            // --- Escenario 4: Control ---
+            if (scenarioKey === 'control') {
+                // BEQ (instIdx 0)
+                if (instIdx === 0) {
+                    const stageIdx = cycle - 1;
+                    if (stageIdx >= 0 && stageIdx < 5) return { css: STYLES[stageIdx], text: STAGES[stageIdx] };
+                }
+                // AND (instIdx 1) -> Se anula si el salto se toma
+                // Asumamos que el salto se toma (se decide en EX ciclo 3)
+                // Ciclo 2: IF
+                // Ciclo 3: ID -> Pero se descubre que no debe ejecutarse -> FLUSH
+                if (instIdx === 1) {
+                    if (cycle === 2) return { css: 's-if', text: 'IF' };
+                    if (cycle === 3) return { css: 's-id', text: 'ID' };
+                    // En ciclo 4 debería ir a EX, pero como BEQ saltó, se elimina
+                    if (cycle >= 4) return { css: 's-stall', text: 'FLUSH' }; // Usamos estilo flush (visualmente igual a stall pero conceptualmente distinto)
+                }
+                // OR (instIdx 2) -> También se anula
+                if (instIdx === 2) {
+                    if (cycle === 3) return { css: 's-if', text: 'IF' };
+                    if (cycle >= 4) return { css: 's-stall', text: 'FLUSH' };
+                }
+            }
+
+            return null;
+        }
+
+        // Inicio
+        init();
+        // Cargar el primero
+        document.querySelector('.scenario-btn').click();
+
+    </script>
+</body>
+
+</html>
