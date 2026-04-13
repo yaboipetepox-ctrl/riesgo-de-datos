@@ -287,7 +287,7 @@
         // La función getStage(instrIndex, cycle) devuelve la etapa o 'stall'
         const scenarios = {
             'basic': {
-                title: "Team Overclock: Flujo Básico",
+                title: "Team Byte to Byte: Flujo Básico",
                 desc: "Ejecución ideal sin dependencias. Observa cómo cada instrucción avanza una etapa por ciclo.",
                 instructions: [
                     { name: "ADD R1, R2" },
@@ -371,7 +371,7 @@
                 logic: (idx, c) => null // Lógica manual en render
             },
             'control': {
-                title: "Power Rangers: Riesgo de Control",
+                title: "Byte to Byte: Riesgo de Control",
                 desc: "<span class='highlight'>PROBLEMA:</span> El salto BEQ se decide en EX. Ya cargamos 2 instrucciones que no deberían ejecutarse.<br>SOLUCIÓN: Se anulan (Flush) las instrucciones incorrectas.",
                 instructions: [
                     { name: "BEQ R1, Loop" },
