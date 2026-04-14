@@ -197,6 +197,7 @@
             font-weight: bold;
             animation: pulse 1s infinite;
         }
+
         /* INTEGRANTE 1 Jose Rodriguez 24-0915- Animación de Stall */
         @keyframes pulse {
             0% {
@@ -479,10 +480,11 @@
         }
 
         // Lógica central que define qué mostrar en cada escenario
+        //Edwin Fang 24-0265
         function calculateStage(scenarioKey, instIdx, cycle, currentMaxCycle) {
             if (cycle > currentMaxCycle) return null;
 
-            // --- Escenario 1: Básico ---
+            // --- Escenario 1: Básico (Edwin Fang 24-0265) ---
             if (scenarioKey === 'basic') {
                 const stageIdx = cycle - instIdx - 1; // Diagonal simple
                 if (stageIdx >= 0 && stageIdx < 5) {
@@ -490,7 +492,7 @@
                 }
             }
 
-            // --- Escenario 2: Riesgo con Stall ---
+            // --- Escenario 2: Riesgo con Stall (Edwin Fang 24-0265) ---
             if (scenarioKey === 'raw_stall') {
                 // ADD (instIdx 0): Flujo normal 1,2,3,4,5
                 if (instIdx === 0) {
