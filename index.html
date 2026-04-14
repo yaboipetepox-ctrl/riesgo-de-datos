@@ -6,6 +6,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Simulador Pipeline: Riesgos y Soluciones</title>
     <style>
+        /* ======================================
+           INTEGRANTE 1 - Jose Rodriguez 24-0915
+           Bloque A: Variables y Estilos
+            ==================================== */
         :root {
             --bg: #f4f7f6;
             --card: #ffffff;
@@ -193,7 +197,7 @@
             font-weight: bold;
             animation: pulse 1s infinite;
         }
-
+        /* INTEGRANTE 1 Jose Rodriguez 24-0915- Animación de Stall */
         @keyframes pulse {
             0% {
                 opacity: 0.6;
@@ -282,7 +286,10 @@
 
         let currentCycle = 0;
         let currentScenarioKey = 'basic';
-
+        // ====================================
+        // INTEGRANTE 1 -Jose Rodriguez 24-0915
+        // Bloque B: Objeto de Escenarios
+        // ====================================
         // --- Definición de Escenarios ---
         // La función getStage(instrIndex, cycle) devuelve la etapa o 'stall'
         const scenarios = {
