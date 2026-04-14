@@ -398,7 +398,7 @@
             for (let i = 1; i <= CYCLES; i++) header.innerHTML += `<th>Ciclo ${i}</th>`;
             resetSim();
         }
-
+        //hecho por francisco Peña 24-0658
         function loadScenario(key) {
             currentScenarioKey = key;
             resetSim();
@@ -430,9 +430,8 @@
                 renderGrid();
             }
         }
-
+        //hecho por francisco Peña 24-0658
         // --- Renderizado Inteligente ---
-
         function renderGrid() {
             const tbody = document.getElementById('table-body');
             const data = scenarios[currentScenarioKey];
